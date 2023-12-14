@@ -1,7 +1,7 @@
 import argparse
 import os
 import open3d as o3d # open3d == 0.16.0
-import numpy as np
+import numpy as np 
 from scipy.spatial.transform import Rotation as R # scipy >= 1.4.0
 
 def get_args():
@@ -19,11 +19,9 @@ def get_args():
 def main(filepath, width, height, point_size, demo_mode, axis, save_images):
     # Read point cloud data from file.
     pcd = read_point_cloud_pts(filepath)
-    print(pcd)
 
     # Initialize the visualizer.
     vis = o3d.visualization.Visualizer()
-    print(vis)
     vis.create_window(width=width, height=height)
 
     # Set the visulized size of each point.
@@ -34,13 +32,7 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
 
     # Get camera extrinsic
     ctr = vis.get_view_control()
-
-    ctr.set_lookat([0, 0, 0]) 
-    ctr.set_zoom(1) 
-    ctr.translate(300.0,600.0)
-
     param = ctr.convert_to_pinhole_camera_parameters()
-    # print(param)
     ori_extrinsic = param.extrinsic.copy()
 
     # Please refer to the following description of open3d camera extrinsic and intrinsic parameters (it's in Japanese)
@@ -67,21 +59,25 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
     elif demo_mode == 1:
         # Rotate a specific angle around an object
         if save_images:
-            save_dir = 'rotate_o_{}'.format(axis)
+            save_dir = "demo"
             if save_dir and not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-        for axis in ["x", "y", "z"]:
-            # Calculate the rotation matrix
-            rot = np.eye(4)
-            rot[:3, :3] = R.from_euler(axis, 90, degrees=True).as_matrix()
+        # Calculate the rotation matrix
+        rot_1 = np.eye(4)
+        rot_2 = np.eye(4)
+        rot_1[:3, :3] = R.from_euler("x", 270, degrees=True).as_matrix()
+        rot_2[:3, :3] = R.from_euler("z", -90, degrees=True).as_matrix()
+        rot_2 = np.dot(rot_1, rot_2)
+        for i, rot in enumerate([rot_1, rot_2]):
             param.extrinsic = np.dot(ori_extrinsic, rot)
             ctr.convert_from_pinhole_camera_parameters(param)
             if save_images:
                 vis.poll_events()
                 vis.update_renderer()
-                vis.capture_screen_image(os.path.join(save_dir, 'rotate_a_{}.png'.format(axis)))
+                vis.capture_screen_image(os.path.join(save_dir, 'rotate_a_{}.png'.format(i)))
             else:
                 draw_camera(vis, width, height)
+
     elif demo_mode == 2:
         # Rotate the camera at a specific angle
         if save_images:
@@ -100,7 +96,7 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
                 vis.capture_screen_image(os.path.join(save_dir, 'rotate_s_{}.png'.format(i)))
             else:
                 draw_camera(vis, width, height)
-
+    
     # Run the visualizer.
     vis.run()
 
@@ -108,23 +104,24 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
     vis.destroy_window()
 
 def read_point_cloud_pts(filepath, data_format='xyzirgb'):
+    adjust_position = [0, -1, 1.2]
     """Read point cloud data in pts format.
 
     Args:
         filepath (str): The point cloud data file (*.pts).
-        data_format (str, optional): The data format of the pts file ('xyzirgb' or 'xyzrgb').
+        data_format (str, optional): The data format of the pts file ('xyzirgb' or 'xyzrgb'). 
                                      Defaults to 'xyzirgb'.
 
     Returns:
         o3d.open3d.geometry.PointCloud: The point cloud data.
-    """
+    """  
 
     assert data_format in ['xyzirgb', 'xyzrgb']
 
     # Reads lines from the pts file.
     # The first line gives the number of points to follow.
-    # Each subsequent line has 7 values, the first three are the (x,y,z) coordinates of the point,
-    # the fourth is an "intensity" value (only avaiable in 'xyzirgb' format),
+    # Each subsequent line has 7 values, the first three are the (x,y,z) coordinates of the point, 
+    # the fourth is an "intensity" value (only avaiable in 'xyzirgb' format), 
     # and the last three are the (r,g,b) colour values (range from 0 to 255).
     try:
         f = open(filepath)
@@ -133,7 +130,7 @@ def read_point_cloud_pts(filepath, data_format='xyzirgb'):
     except Exception as e:
         print(e)
         return None, None
-
+    
     if len(contents) == 0:
         return None, None
 
@@ -145,7 +142,7 @@ def read_point_cloud_pts(filepath, data_format='xyzirgb'):
         info = contents[i].strip().split(' ')
 
         for j in range(3):
-            points[i-1, j] = float(info[j]) # points
+            points[i-1, j] = float(info[j]) + adjust_position[j]
             skip_place = 1 if data_format == 'xyzirgb' else 0 # disregard the intensity value
             colors[i-1, j] = int(info[j+3+skip_place]) # colors
 
@@ -160,11 +157,11 @@ def draw_camera(visualizer, width, height, **kwargs):
 
     Args:
         visualizer (o3d.visualization.Visualizer): The point cloud visualizer.
-        width (int): Width of the window.
-        height (int): Height of window.
+        width (int): Width of the window. 
+        height (int): Height of window. 
         scale (int): camera model scale. Defaults to 1.
         color (list): color of the image plane and pyramid lines. Defaults to None.
-    """
+    """    
     assert visualizer and width and height
     scale = kwargs.get('scale', 1)
     color = kwargs.get('color', None)
@@ -261,13 +258,13 @@ def create_coordinate_frame(T, scale=0.25):
     frame.transform(T)
     return frame
 
-filepath = 'pump1.pts'
 
+filepath = 'pump1.pts'
 width = 3000
 height = 3000
 point_size = 5
 demo_mode = 1
-axis = 'y'
+axis = 'z'
 save_images = True
-#
+
 main(filepath, width, height, point_size, demo_mode, axis, save_images)
