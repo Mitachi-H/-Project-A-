@@ -63,6 +63,7 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
             if save_dir and not os.path.exists(save_dir):
                 os.makedirs(save_dir)
         # Calculate the rotation matrix
+        # ------------------------------
         rot_1 = np.eye(4)
         rot_2 = np.eye(4)
         rot_1[:3, :3] = R.from_euler("x", 270, degrees=True).as_matrix()
@@ -77,6 +78,8 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
                 vis.capture_screen_image(os.path.join(save_dir, 'rotate_a_{}.png'.format(i)))
             else:
                 draw_camera(vis, width, height)
+        # ------------------------------
+
 
     elif demo_mode == 2:
         # Rotate the camera at a specific angle
