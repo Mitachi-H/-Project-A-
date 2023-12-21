@@ -32,6 +32,14 @@ def main(filepath, width, height, point_size, demo_mode, axis, save_images):
 
     # Get camera extrinsic
     ctr = vis.get_view_control()
+
+
+    # open3d.camera.PinholeCameraIntrinsicでカメラの焦点距離を取得する
+    camera_intrinsic = ctr.convert_to_pinhole_camera_parameters().intrinsic
+    # カメラの焦点距離を取得する
+    focal_length = camera_intrinsic.get_focal_length()
+    print(f"焦点距離: {focal_length}")
+
     param = ctr.convert_to_pinhole_camera_parameters()
     ori_extrinsic = param.extrinsic.copy()
 
